@@ -77,8 +77,16 @@ def get_all_messages_from_channel(client: SlackClient = None, channel: str = Non
         raise ValueError
 
     _messages = []
-    messages_dict = json.loads(client.api_call(_api_call, channel=channel, count=1000).decode())
-    _messages.extend(messages_dict.get('messages'))
+    messages_dict = json.loads(client.api_call(_api_call, channel=channel, count=10).decode())
+    logger.debug(messages_dict.get('has_more'))
+    while messages_dict.get('has_more'):
+        time.sleep(.5)
+        _messages.extend(messages_dict.get('messages'))
+        fetched = min((d['ts'] for d in _messages))
+        messages_dict = json.loads(
+            client.api_call(_api_call, channel=channel, latest=fetched, inclusive=0, count=10).decode())
+        logger.debug('Updated message list: length={}, Fetched until ts={}'.format(len(_messages), fetched))
+        logger.debug(_messages)
     return _messages
 
 
